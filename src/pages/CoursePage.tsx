@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useState } from "react";
 import { 
@@ -33,7 +32,7 @@ const CoursePage = () => {
     id: "1",
     title: "Advanced Social Media Marketing",
     instructor: "Jane Smith",
-    instructorAvatar: "/placeholder.svg",
+    instructorAvatar: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=200&h=200",
     instructorTitle: "Digital Marketing Specialist",
     instructorBio: "Jane has over 10 years of experience in digital marketing, working with Fortune 500 companies and startups alike.",
     rating: 4.8,
@@ -95,21 +94,21 @@ const CoursePage = () => {
     reviews: [
       {
         user: "Michael P.",
-        avatar: "/placeholder.svg",
+        avatar: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=80&h=80",
         rating: 5,
         date: "2 months ago",
         comment: "This course completely transformed my approach to social media. The strategies are practical and I've already seen growth in my engagement."
       },
       {
         user: "Sarah L.",
-        avatar: "/placeholder.svg",
+        avatar: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&q=80&w=80&h=80",
         rating: 4,
         date: "3 months ago",
         comment: "Very informative and well-structured. I would have liked more examples for B2B companies, but overall it was excellent."
       },
       {
         user: "David R.",
-        avatar: "/placeholder.svg",
+        avatar: "https://images.unsplash.com/photo-1473091534298-04dcbce3278c?auto=format&fit=crop&q=80&w=80&h=80",
         rating: 5,
         date: "1 month ago",
         comment: "Jane is an incredible instructor who clearly knows her stuff. The section on analytics was particularly helpful for my business."
@@ -120,7 +119,8 @@ const CoursePage = () => {
     certificate: true,
     lastUpdated: "May 2023",
     isPurchased: true, // Toggle this to simulate different user states
-    progress: 35
+    progress: 35,
+    courseImage: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1000"
   };
 
   // Calculate total duration
@@ -146,7 +146,14 @@ const CoursePage = () => {
   return (
     <div className="space-y-8">
       {/* Course Header */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 -mx-4 px-4 py-10 md:rounded-2xl text-white">
+      <div 
+        className="bg-gradient-to-r from-gray-900 to-gray-800 -mx-4 px-4 py-10 md:rounded-2xl text-white relative"
+        style={{
+          backgroundImage: `linear-gradient(to right, rgba(17, 24, 39, 0.95), rgba(31, 41, 55, 0.9)), url(${course.courseImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row gap-8">
             <div className="flex-1 space-y-4">
@@ -207,16 +214,23 @@ const CoursePage = () => {
           {/* Video Player */}
           {course.isPurchased || currentLesson.isPreview ? (
             <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-[url('/placeholder.svg')] bg-cover bg-center opacity-50"></div>
+              <div 
+                className="absolute inset-0 bg-cover bg-center opacity-50"
+                style={{ backgroundImage: `url(https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80)` }}
+              ></div>
               <Button size="lg" className="relative z-10 rounded-full w-16 h-16 p-0">
                 <PlayIcon className="h-8 w-8" />
               </Button>
             </div>
           ) : (
             <div className="aspect-video bg-gray-200 rounded-lg flex flex-col items-center justify-center relative overflow-hidden">
-              <LockIcon className="h-12 w-12 text-gray-500 mb-2" />
-              <p className="font-medium text-gray-800">Premium Content</p>
-              <p className="text-sm text-gray-600">Purchase this course to unlock all videos</p>
+              <div 
+                className="absolute inset-0 bg-cover bg-center opacity-20"
+                style={{ backgroundImage: `url(https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80)` }}
+              ></div>
+              <LockIcon className="h-12 w-12 text-gray-500 mb-2 relative z-10" />
+              <p className="font-medium text-gray-800 relative z-10">Premium Content</p>
+              <p className="text-sm text-gray-600 relative z-10">Purchase this course to unlock all videos</p>
             </div>
           )}
 
