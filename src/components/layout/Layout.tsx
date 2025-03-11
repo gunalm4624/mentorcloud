@@ -13,7 +13,7 @@ const Layout = () => {
       <Sidebar />
       <div className={cn(
         "flex-1 flex flex-col overflow-hidden transition-all duration-300",
-        isOpen ? "lg:ml-64" : "lg:ml-20"
+        isOpen ? "lg:ml-0" : "lg:ml-0" // Removed the margins that were causing extra space
       )}>
         <Header />
         <main className="flex-1 overflow-y-auto px-4 py-6">
