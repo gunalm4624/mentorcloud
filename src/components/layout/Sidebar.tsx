@@ -10,13 +10,15 @@ import {
   SearchIcon, 
   CalendarIcon, 
   LogOutIcon, 
-  MenuIcon 
+  MenuIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon 
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function Sidebar() {
-  const { isOpen } = useSidebar();
+  const { isOpen, toggle } = useSidebar();
   const location = useLocation();
 
   const menuItems = [
@@ -37,19 +39,34 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-30 flex flex-col bg-white border-r border-gray-200 transform transition-all duration-300 ease-in-out",
-        isOpen ? "translate-x-0 w-64" : "-translate-x-full w-0 lg:w-20 lg:translate-x-0"
+        "fixed inset-y-0 left-0 z-30 flex flex-col bg-white border-r border-gray-200 transform transition-all duration-300 ease-in-out lg:relative",
+        isOpen ? "w-64" : "w-20",
+        "lg:translate-x-0",
+        !isOpen && "translate-x-[-100%] lg:translate-x-0"
       )}
     >
-      {/* Logo */}
-      <div className="flex h-16 items-center justify-center px-4 border-b border-gray-200">
+      {/* Logo and Toggle Button */}
+      <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200">
         {isOpen ? (
           <h1 className="text-xl font-semibold bg-gradient-to-r from-black to-gray-700 bg-clip-text text-transparent">
             MasterPlan
           </h1>
         ) : (
-          <span className="text-2xl font-bold">MP</span>
+          <span className="text-2xl font-bold mx-auto">MP</span>
         )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hidden lg:flex"
+          onClick={toggle}
+          aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+        >
+          {isOpen ? (
+            <ChevronLeftIcon className="h-5 w-5" />
+          ) : (
+            <ChevronRightIcon className="h-5 w-5" />
+          )}
+        </Button>
       </div>
 
       {/* Menu Items */}
@@ -61,13 +78,15 @@ export function Sidebar() {
                 <Button
                   variant="ghost"
                   className={cn(
-                    "w-full justify-start gap-3 font-normal",
+                    "w-full justify-start gap-3",
                     isActive(item.path)
                       ? "bg-gray-100 text-black font-medium"
-                      : "text-gray-600 hover:text-black hover:bg-gray-50"
+                      : "text-gray-600 hover:text-black hover:bg-gray-50",
+                    !isOpen && "justify-center"
                   )}
+                  title={!isOpen ? item.label : undefined}
                 >
-                  <item.icon className="h-5 w-5" />
+                  <item.icon className="h-5 w-5 flex-shrink-0" />
                   {isOpen && <span>{item.label}</span>}
                 </Button>
               </Link>
@@ -79,7 +98,10 @@ export function Sidebar() {
       {/* User Profile */}
       <div className="p-4 border-t border-gray-200">
         <Link to="/profile/me">
-          <div className={cn("flex items-center", isOpen ? "gap-3" : "justify-center")}>
+          <div className={cn(
+            "flex items-center",
+            isOpen ? "gap-3" : "justify-center"
+          )}>
             <Avatar className="h-9 w-9 transition-all">
               <AvatarImage src="/placeholder.svg" alt="User" />
               <AvatarFallback>MP</AvatarFallback>
