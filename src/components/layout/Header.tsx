@@ -5,7 +5,8 @@ import {
   BellIcon, 
   MenuIcon, 
   SearchIcon,
-  UserIcon
+  UserIcon,
+  LogOutIcon
 } from "lucide-react";
 import { useSidebar } from "./SidebarProvider";
 import { Link } from "react-router-dom";
