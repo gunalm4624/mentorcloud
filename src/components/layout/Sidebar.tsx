@@ -12,7 +12,8 @@ import {
   LogOutIcon, 
   MenuIcon,
   ChevronLeftIcon,
-  ChevronRightIcon 
+  ChevronRightIcon,
+  Sparkles
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,20 +40,21 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-30 flex flex-col bg-white border-r border-gray-200 transform transition-all duration-300 ease-in-out lg:relative",
+        "fixed inset-y-0 left-0 z-30 flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-all duration-300 ease-in-out lg:relative",
         isOpen ? "w-64" : "w-20",
         "lg:translate-x-0",
         !isOpen && "translate-x-[-100%] lg:translate-x-0"
       )}
     >
       {/* Logo and Toggle Button */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200">
+      <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800">
         {isOpen ? (
-          <h1 className="text-xl font-semibold bg-gradient-to-r from-black to-gray-700 bg-clip-text text-transparent">
+          <h1 className="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-purple-400 dark:to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-purple-500" />
             MasterPlan
           </h1>
         ) : (
-          <span className="text-2xl font-bold mx-auto">MP</span>
+          <span className="text-2xl font-bold mx-auto text-gradient-purple">MP</span>
         )}
         <Button
           variant="ghost"
@@ -80,13 +82,16 @@ export function Sidebar() {
                   className={cn(
                     "w-full justify-start gap-3",
                     isActive(item.path)
-                      ? "bg-gray-100 text-black font-medium"
-                      : "text-gray-600 hover:text-black hover:bg-gray-50",
+                      ? "bg-gray-100 dark:bg-gray-800 text-purple-600 dark:text-purple-400 font-medium"
+                      : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800",
                     !isOpen && "justify-center"
                   )}
                   title={!isOpen ? item.label : undefined}
                 >
-                  <item.icon className="h-5 w-5 flex-shrink-0" />
+                  <item.icon className={cn(
+                    "h-5 w-5 flex-shrink-0",
+                    isActive(item.path) && "text-purple-600 dark:text-purple-400"
+                  )} />
                   {isOpen && <span>{item.label}</span>}
                 </Button>
               </Link>
@@ -96,20 +101,20 @@ export function Sidebar() {
       </nav>
 
       {/* User Profile */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-800">
         <Link to="/profile/me">
           <div className={cn(
             "flex items-center",
             isOpen ? "gap-3" : "justify-center"
           )}>
-            <Avatar className="h-9 w-9 transition-all">
+            <Avatar className="h-9 w-9 transition-all border-2 border-purple-200 dark:border-purple-800">
               <AvatarImage src="/placeholder.svg" alt="User" />
-              <AvatarFallback>MP</AvatarFallback>
+              <AvatarFallback className="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300">MP</AvatarFallback>
             </Avatar>
             {isOpen && (
               <div className="flex flex-col">
                 <span className="text-sm font-medium">John Doe</span>
-                <span className="text-xs text-gray-500">john@example.com</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">john@example.com</span>
               </div>
             )}
           </div>

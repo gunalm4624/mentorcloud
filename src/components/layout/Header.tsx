@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -19,12 +20,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ThemeToggle } from "../theme/ThemeToggle";
 
 export function Header() {
   const { isOpen, toggle } = useSidebar();
 
   return (
-    <header className="sticky top-0 z-20 h-16 bg-white/80 backdrop-blur-lg border-b border-gray-200">
+    <header className="sticky top-0 z-20 h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
       <div className="h-full px-4 flex items-center justify-between gap-4 max-w-[1400px] mx-auto">
         <div className="flex items-center gap-2">
           <Button 
@@ -37,7 +39,7 @@ export function Header() {
             <MenuIcon className="h-5 w-5" />
           </Button>
           <Link to="/" className="lg:hidden">
-            <h1 className="text-xl font-semibold bg-gradient-to-r from-black to-gray-700 bg-clip-text text-transparent">
+            <h1 className="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-purple-400 dark:to-purple-600 bg-clip-text text-transparent">
               MasterPlan
             </h1>
           </Link>
@@ -52,17 +54,19 @@ export function Header() {
             <Input
               type="search"
               placeholder="Search courses, mentors, topics..."
-              className="w-full pl-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
+              className="w-full pl-10 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 transition-colors"
             />
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <BellIcon className="h-5 w-5" />
-                <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+                <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-purple-500"></span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-72">
@@ -83,7 +87,7 @@ export function Header() {
                 </DropdownMenuItem>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="justify-center text-sm font-medium text-blue-600">
+              <DropdownMenuItem className="justify-center text-sm font-medium text-purple-600 dark:text-purple-400">
                 View all notifications
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -115,8 +119,10 @@ export function Header() {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="text-red-600">
-                <LogOutIcon className="mr-2 h-4 w-4" />
-                <span>Logout</span>
+                <Link to="/auth" className="flex items-center w-full">
+                  <LogOutIcon className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
