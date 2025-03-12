@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/layout/SidebarProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
@@ -29,9 +29,10 @@ const App = () => (
         <SidebarProvider>
           <BrowserRouter>
             <Routes>
-              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/" element={<Navigate to="/landing" replace />} />
               <Route path="/landing" element={<LandingPage />} />
-              <Route path="/" element={<Layout />}>
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/app" element={<Layout />}>
                 <Route index element={<HomePage />} />
                 <Route path="explore" element={<ExplorePage />} />
                 <Route path="course/:id" element={<CoursePage />} />
@@ -40,6 +41,7 @@ const App = () => (
                 <Route path="profile/:id" element={<ProfilePage />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
+              <Route path="*" element={<Navigate to="/landing" replace />} />
             </Routes>
           </BrowserRouter>
         </SidebarProvider>
