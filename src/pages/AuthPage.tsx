@@ -1,104 +1,61 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Mail, Lock, User, MailCheck, ArrowLeft } from "lucide-react";
+import { Sparkles, Mail, Lock, User, MailCheck, ArrowLeft, UserPlus } from "lucide-react";
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/contexts/AuthContext';
 
 const AuthPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
+  const { signIn, signUp, isLoading, session } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isVerification, setIsVerification] = useState(false);
 
   // Get the tab from URL query params or default to "login"
   const urlParams = new URLSearchParams(location.search);
   const defaultTab = urlParams.get('tab') === 'register' ? 'register' : 'login';
+  
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (session) {
+      navigate('/app');
+    }
+  }, [session, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    
-    try {
-      // This will be implemented with Supabase
-      console.log('Login with:', email, password);
-      
-      // Simulate successful login
-      setTimeout(() => {
-        setIsLoading(false);
-        // Redirect to dashboard after login
-        navigate('/app');
-      }, 1500);
-    } catch (error) {
-      console.error('Login error:', error);
-      setIsLoading(false);
-      toast({
-        title: "Login Failed",
-        description: "There was a problem with your login. Please try again.",
-        variant: "destructive",
-      });
-    }
+    await signIn(email, password);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    
-    try {
-      // This will be implemented with Supabase
-      console.log('Register with:', name, email, password);
-      
-      // Simulate successful registration with verification
-      setTimeout(() => {
-        setIsLoading(false);
-        setIsVerification(true);
-      }, 1500);
-    } catch (error) {
-      console.error('Registration error:', error);
-      setIsLoading(false);
-      toast({
-        title: "Registration Failed",
-        description: "There was a problem creating your account. Please try again.",
-        variant: "destructive",
-      });
-    }
+    await signUp(email, password, name);
+    setIsVerification(true);
   };
 
-  const handleGoogleSignIn = () => {
-    setIsGoogleLoading(true);
-    
+  const handleGoogleSignIn = async () => {
     try {
-      // This will be implemented with Supabase
-      console.log('Signing in with Google');
-      
-      // Simulate Google auth success after a delay
-      setTimeout(() => {
-        setIsGoogleLoading(false);
-        toast({
-          title: "Google Sign-in Successful",
-          description: "You have been authenticated with Google.",
-        });
-        navigate('/app');
-      }, 1500);
-    } catch (error) {
-      console.error('Google sign-in error:', error);
-      setIsGoogleLoading(false);
-      toast({
-        title: "Google Sign-in Failed",
-        description: "There was a problem signing in with Google. Please try again.",
-        variant: "destructive",
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/app`,
+        },
       });
+      
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      console.error('Google sign-in error:', error);
     }
   };
 
@@ -230,10 +187,10 @@ const AuthPage = () => {
                   type="button"
                   variant="outline" 
                   onClick={handleGoogleSignIn}
-                  disabled={isGoogleLoading}
+                  disabled={isLoading}
                   className="w-full"
                 >
-                  {isGoogleLoading ? (
+                  {isLoading ? (
                     "Connecting..."
                   ) : (
                     <>
@@ -330,10 +287,10 @@ const AuthPage = () => {
                   type="button"
                   variant="outline" 
                   onClick={handleGoogleSignIn}
-                  disabled={isGoogleLoading}
+                  disabled={isLoading}
                   className="w-full"
                 >
-                  {isGoogleLoading ? (
+                  {isLoading ? (
                     "Connecting..."
                   ) : (
                     <>

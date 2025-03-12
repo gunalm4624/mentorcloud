@@ -6,7 +6,8 @@ import {
   MenuIcon, 
   SearchIcon,
   UserIcon,
-  LogOutIcon
+  LogOutIcon,
+  Settings
 } from "lucide-react";
 import { useSidebar } from "./SidebarProvider";
 import { Link } from "react-router-dom";
@@ -21,9 +22,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "../theme/ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Header() {
   const { isOpen, toggle } = useSidebar();
+  const { profile, user, signOut } = useAuth();
+
+  // Get initials from full name
+  const getInitials = (name?: string | null) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('');
+  };
 
   return (
     <header className="sticky top-0 z-20 h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
@@ -38,7 +47,7 @@ export function Header() {
           >
             <MenuIcon className="h-5 w-5" />
           </Button>
-          <Link to="/" className="lg:hidden">
+          <Link to="/app" className="lg:hidden">
             <h1 className="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-purple-400 dark:to-purple-600 bg-clip-text text-transparent">
               MasterPlan
             </h1>
@@ -97,32 +106,43 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="/placeholder.svg" alt="User" />
-                  <AvatarFallback>MP</AvatarFallback>
+                  <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || 'User'} />
+                  <AvatarFallback className="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300">
+                    {getInitials(profile?.full_name)}
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{profile?.full_name || user?.email || 'My Account'}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
-                <Link to="/profile/me" className="flex items-center w-full">
+                <Link to="/app/profile/me" className="flex items-center w-full">
                   <UserIcon className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Link to="/dashboard" className="flex items-center w-full">
+                <Link to="/app/dashboard" className="flex items-center w-full">
                   <SearchIcon className="mr-2 h-4 w-4" />
                   <span>Dashboard</span>
                 </Link>
               </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Link to="/app/settings" className="flex items-center w-full">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">
-                <Link to="/auth" className="flex items-center w-full">
+              <DropdownMenuItem 
+                className="text-red-600"
+                onClick={() => signOut()}
+              >
+                <div className="flex items-center w-full">
                   <LogOutIcon className="mr-2 h-4 w-4" />
                   <span>Logout</span>
-                </Link>
+                </div>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

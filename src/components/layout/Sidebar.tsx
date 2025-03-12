@@ -9,32 +9,52 @@ import {
   CreditCardIcon, 
   SearchIcon, 
   CalendarIcon, 
-  LogOutIcon, 
   MenuIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  Sparkles
+  Sparkles,
+  Pencil
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/badge";
 
 export function Sidebar() {
   const { isOpen, toggle } = useSidebar();
   const location = useLocation();
+  const { profile, user } = useAuth();
+
+  // Get initials from full name
+  const getInitials = (name?: string | null) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('');
+  };
 
   const menuItems = [
-    { icon: HomeIcon, label: "Home", path: "/" },
-    { icon: SearchIcon, label: "Explore", path: "/explore" },
-    { icon: BookOpenIcon, label: "My Courses", path: "/dashboard" },
-    { icon: CalendarIcon, label: "Mentorship", path: "/mentorship" },
-    { icon: CreditCardIcon, label: "Earnings", path: "/dashboard?tab=earnings" },
+    { icon: HomeIcon, label: "Home", path: "/app" },
+    { icon: SearchIcon, label: "Explore", path: "/app/explore" },
+    { icon: BookOpenIcon, label: "My Courses", path: "/app/dashboard" },
+    { icon: CalendarIcon, label: "Mentorship", path: "/app/mentorship" },
   ];
 
+  // Add creator menu items if the user is a creator
+  const creatorMenuItems = profile?.is_creator ? [
+    { icon: Pencil, label: "Create Course", path: "/app/create-course", badge: "Creator" },
+    { icon: CreditCardIcon, label: "Earnings", path: "/app/dashboard?tab=earnings", badge: "Creator" },
+  ] : [];
+
+  // Combine regular and creator menu items
+  const allMenuItems = [...menuItems, ...creatorMenuItems];
+
   const isActive = (path: string) => {
-    if (path === "/" && location.pathname === "/") {
+    if (path === "/app" && location.pathname === "/app") {
       return true;
     }
-    return location.pathname.startsWith(path) && path !== "/";
+    if (path !== "/app") {
+      return location.pathname.startsWith(path);
+    }
+    return false;
   };
 
   return (
@@ -74,7 +94,7 @@ export function Sidebar() {
       {/* Menu Items */}
       <nav className="flex-1 overflow-y-auto py-4 px-3">
         <ul className="space-y-2">
-          {menuItems.map((item) => (
+          {allMenuItems.map((item) => (
             <li key={item.label}>
               <Link to={item.path}>
                 <Button
@@ -92,7 +112,16 @@ export function Sidebar() {
                     "h-5 w-5 flex-shrink-0",
                     isActive(item.path) && "text-purple-600 dark:text-purple-400"
                   )} />
-                  {isOpen && <span>{item.label}</span>}
+                  {isOpen && (
+                    <div className="flex items-center justify-between w-full">
+                      <span>{item.label}</span>
+                      {item.badge && (
+                        <Badge variant="outline" className="ml-2 text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </Button>
               </Link>
             </li>
@@ -102,19 +131,21 @@ export function Sidebar() {
 
       {/* User Profile */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-800">
-        <Link to="/profile/me">
+        <Link to="/app/profile/me">
           <div className={cn(
             "flex items-center",
             isOpen ? "gap-3" : "justify-center"
           )}>
             <Avatar className="h-9 w-9 transition-all border-2 border-purple-200 dark:border-purple-800">
-              <AvatarImage src="/placeholder.svg" alt="User" />
-              <AvatarFallback className="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300">MP</AvatarFallback>
+              <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || 'User'} />
+              <AvatarFallback className="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300">
+                {getInitials(profile?.full_name)}
+              </AvatarFallback>
             </Avatar>
             {isOpen && (
               <div className="flex flex-col">
-                <span className="text-sm font-medium">John Doe</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">john@example.com</span>
+                <span className="text-sm font-medium">{profile?.full_name || 'User'}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</span>
               </div>
             )}
           </div>
