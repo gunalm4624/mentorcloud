@@ -53,7 +53,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gradient-purple">MasterPlan</h1>
+              <h1 className="text-2xl font-bold text-gradient-purple">PrismLMS</h1>
             </div>
             <div className="flex items-center gap-4">
               <ThemeToggle />
@@ -127,7 +127,7 @@ const LandingPage = () => {
       <section className="py-20 dark:bg-gray-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Why Choose MasterPlan?</h2>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Why Choose PrismLMS?</h2>
             <p className="mt-4 text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
               Our platform offers everything you need to succeed in your learning journey
             </p>
@@ -194,7 +194,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-center md:text-left mb-8 md:mb-0">
-              <h2 className="text-2xl font-bold text-gradient-purple mb-2">MasterPlan</h2>
+              <h2 className="text-2xl font-bold text-gradient-purple mb-2">PrismLMS</h2>
               <p className="text-gray-600 dark:text-gray-300">Empowering your learning journey</p>
             </div>
             <div className="flex flex-wrap justify-center gap-8">
@@ -205,7 +205,7 @@ const LandingPage = () => {
             </div>
           </div>
           <div className="mt-8 text-center text-gray-500 dark:text-gray-400 text-sm">
-            © {new Date().getFullYear()} MasterPlan. All rights reserved.
+            © {new Date().getFullYear()} PrismLMS. All rights reserved.
           </div>
         </div>
       </footer>
