@@ -9,10 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Mail, Lock, User, MailCheck, ArrowLeft } from "lucide-react";
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
 
 const AuthPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -41,6 +43,11 @@ const AuthPage = () => {
     } catch (error) {
       console.error('Login error:', error);
       setIsLoading(false);
+      toast({
+        title: "Login Failed",
+        description: "There was a problem with your login. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -60,24 +67,38 @@ const AuthPage = () => {
     } catch (error) {
       console.error('Registration error:', error);
       setIsLoading(false);
+      toast({
+        title: "Registration Failed",
+        description: "There was a problem creating your account. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     setIsGoogleLoading(true);
     
     try {
       // This will be implemented with Supabase
       console.log('Signing in with Google');
       
-      // Simulate Google auth
+      // Simulate Google auth success after a delay
       setTimeout(() => {
         setIsGoogleLoading(false);
+        toast({
+          title: "Google Sign-in Successful",
+          description: "You have been authenticated with Google.",
+        });
         navigate('/app');
       }, 1500);
     } catch (error) {
       console.error('Google sign-in error:', error);
       setIsGoogleLoading(false);
+      toast({
+        title: "Google Sign-in Failed",
+        description: "There was a problem signing in with Google. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
