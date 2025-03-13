@@ -10,7 +10,9 @@ import { Sparkles, Mail, Lock, User, MailCheck, ArrowLeft } from "lucide-react";
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from "@/integrations/supabase/client";
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '@/integrations/firebase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -20,6 +22,7 @@ const AuthPage = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isVerification, setIsVerification] = useState(false);
+  const { toast } = useToast();
 
   // Get the tab from URL query params or default to "login"
   const urlParams = new URLSearchParams(location.search);
@@ -34,29 +37,40 @@ const AuthPage = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signIn(email, password);
+    try {
+      await signIn(email, password);
+    } catch (error) {
+      // Error is handled in the signIn function
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signUp(email, password, name);
-    setIsVerification(true);
+    try {
+      await signUp(email, password, name);
+      // No need for verification screen with Firebase
+      navigate('/app');
+    } catch (error) {
+      // Error is handled in the signUp function
+    }
   };
 
   const handleGoogleSignIn = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/app`,
-        },
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      navigate('/app');
+      toast({
+        title: "Welcome!",
+        description: "You've successfully signed in with Google.",
       });
-      
-      if (error) {
-        throw error;
-      }
     } catch (error: any) {
       console.error('Google sign-in error:', error);
+      toast({
+        variant: "destructive",
+        title: "Google sign-in failed",
+        description: error.message,
+      });
     }
   };
 

@@ -1,8 +1,17 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Session, User } from '@supabase/supabase-js';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  updateProfile,
+  User as FirebaseUser,
+  GoogleAuthProvider,
+  signInWithPopup
+} from 'firebase/auth';
+import { auth } from '@/integrations/firebase/client';
 import { useToast } from "@/hooks/use-toast";
 
 interface Profile {
@@ -14,8 +23,8 @@ interface Profile {
 }
 
 interface AuthContextType {
-  session: Session | null;
-  profile: any;
+  session: FirebaseUser | null;
+  profile: Profile | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
@@ -29,119 +38,151 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [session, setSession] = useState<FirebaseUser | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Initialize user profiles in local storage if not exists
+  const initializeUserProfiles = () => {
+    if (!localStorage.getItem('userProfiles')) {
+      localStorage.setItem('userProfiles', JSON.stringify({}));
+    }
+  };
+
+  // Save profile to local storage
+  const saveProfileToStorage = (userId: string, profileData: Profile) => {
+    const profiles = JSON.parse(localStorage.getItem('userProfiles') || '{}');
+    profiles[userId] = profileData;
+    localStorage.setItem('userProfiles', JSON.stringify(profiles));
+  };
+
+  // Get profile from local storage
+  const getProfileFromStorage = (userId: string) => {
+    const profiles = JSON.parse(localStorage.getItem('userProfiles') || '{}');
+    return profiles[userId] || null;
+  };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        
-        if (session) {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (error) {
-            console.error('Error fetching user profile:', error);
-          } else {
-            setProfile(data);
-          }
-        } else {
-          setProfile(null);
-        }
-        
-        setIsLoading(false);
-      }
-    );
-
-    const initializeAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
+    initializeUserProfiles();
+    
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setSession(user);
       
-      if (session) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (error) {
-          console.error('Error fetching user profile:', error);
-        } else {
-          setProfile(data);
+      if (user) {
+        // Check if we have a profile in local storage
+        let userProfile = getProfileFromStorage(user.uid);
+        
+        if (!userProfile) {
+          // Create a new profile if one doesn't exist
+          userProfile = {
+            id: user.uid,
+            full_name: user.displayName,
+            avatar_url: user.photoURL,
+            is_creator: false,
+            theme_color: 'black'
+          };
+          saveProfileToStorage(user.uid, userProfile);
         }
+        
+        setProfile(userProfile);
+      } else {
+        setProfile(null);
       }
       
       setIsLoading(false);
-    };
-
-    initializeAuth();
+    });
 
     return () => {
-      subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      await signInWithEmailAndPassword(auth, email, password);
       navigate('/app');
+      toast({
+        title: "Welcome back!",
+        description: "You've successfully signed in.",
+      });
     } catch (error: any) {
       console.error('Error signing in:', error.message);
+      toast({
+        variant: "destructive",
+        title: "Sign in failed",
+        description: error.message,
+      });
       throw error;
     }
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const { error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        options: {
-          data: {
-            full_name: fullName
-          }
-        }
+      const { user } = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Update the user's profile with their full name
+      await updateProfile(user, {
+        displayName: fullName
       });
       
-      if (error) throw error;
+      // Create a new profile in local storage
+      const newProfile = {
+        id: user.uid,
+        full_name: fullName,
+        avatar_url: null,
+        is_creator: false,
+        theme_color: 'black'
+      };
+      
+      saveProfileToStorage(user.uid, newProfile);
+      setProfile(newProfile);
+      
+      toast({
+        title: "Account created!",
+        description: "Your account has been successfully created.",
+      });
     } catch (error: any) {
       console.error('Error signing up:', error.message);
+      toast({
+        variant: "destructive",
+        title: "Sign up failed",
+        description: error.message,
+      });
       throw error;
     }
   };
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await firebaseSignOut(auth);
       navigate('/auth');
+      toast({
+        title: "Signed out",
+        description: "You've been successfully signed out.",
+      });
     } catch (error: any) {
       console.error('Error signing out:', error.message);
+      toast({
+        variant: "destructive",
+        title: "Sign out failed",
+        description: error.message,
+      });
     }
   };
 
-  const updateProfile = async (updates: any) => {
+  const updateProfileFn = async (updates: any) => {
     try {
-      if (!session?.user) throw new Error('No user is logged in');
+      if (!session) throw new Error('No user is logged in');
       
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', session.user.id);
-        
-      if (error) throw error;
+      // Update the profile in local storage
+      const currentProfile = getProfileFromStorage(session.uid);
+      const updatedProfile = { ...currentProfile, ...updates };
+      saveProfileToStorage(session.uid, updatedProfile);
       
-      setProfile({
-        ...profile,
-        ...updates
-      });
+      // Update the profile state
+      setProfile(updatedProfile);
       
       return { success: true };
     } catch (error: any) {
@@ -152,35 +193,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const uploadAvatar = async (file: File) => {
     try {
-      if (!session?.user) throw new Error('No user is logged in');
+      if (!session) throw new Error('No user is logged in');
       
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${session.user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${fileName}`;
+      // In a real implementation, you would upload the file to Firebase Storage
+      // For now, we'll use a data URL as a placeholder
+      const reader = new FileReader();
       
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
+      return new Promise<{ success: boolean, avatarUrl?: string }>((resolve) => {
+        reader.onload = async (e) => {
+          const dataUrl = e.target?.result as string;
+          
+          // Update Firebase user profile
+          await updateProfile(session, {
+            photoURL: dataUrl
+          });
+          
+          // Update local profile
+          await updateProfileFn({ avatar_url: dataUrl });
+          
+          resolve({ success: true, avatarUrl: dataUrl });
+        };
         
-      if (uploadError) throw uploadError;
-      
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-        
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: data.publicUrl })
-        .eq('id', session.user.id);
-        
-      if (updateError) throw updateError;
-      
-      setProfile({
-        ...profile,
-        avatar_url: data.publicUrl
+        reader.readAsDataURL(file);
       });
-      
-      return { success: true, avatarUrl: data.publicUrl };
     } catch (error: any) {
       console.error('Error uploading avatar:', error.message);
       return { success: false, error };
@@ -189,21 +224,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const becomeCreator = async () => {
     try {
-      if (!session?.user) throw new Error('No user is logged in');
+      if (!session) throw new Error('No user is logged in');
       
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_creator: true })
-        .eq('id', session.user.id);
-        
-      if (error) throw error;
+      const result = await updateProfileFn({ is_creator: true });
       
-      setProfile({
-        ...profile,
-        is_creator: true
-      });
+      if (result.success) {
+        toast({
+          title: "You're now a creator!",
+          description: "You can now create and publish courses.",
+        });
+      }
       
-      return { success: true };
+      return result;
     } catch (error: any) {
       console.error('Error becoming creator:', error.message);
       return { success: false, error };
@@ -212,24 +244,59 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const saveThemePreference = async (themeColor: string) => {
     try {
-      if (!session?.user) throw new Error('No user is logged in');
+      if (!session) throw new Error('No user is logged in');
       
-      const { error } = await supabase
-        .from('profiles')
-        .update({ theme_color: themeColor })
-        .eq('id', session.user.id);
-        
-      if (error) throw error;
+      const result = await updateProfileFn({ theme_color: themeColor });
       
-      setProfile({
-        ...profile,
-        theme_color: themeColor
-      });
+      if (result.success) {
+        toast({
+          title: "Theme updated",
+          description: `Your theme color has been set to ${themeColor}.`,
+        });
+      }
       
-      return { success: true };
+      return result;
     } catch (error: any) {
       console.error('Error saving theme preference:', error.message);
       return { success: false, error };
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Check if we have a profile for this user
+      let userProfile = getProfileFromStorage(user.uid);
+      
+      if (!userProfile) {
+        // Create a new profile if one doesn't exist
+        userProfile = {
+          id: user.uid,
+          full_name: user.displayName,
+          avatar_url: user.photoURL,
+          is_creator: false,
+          theme_color: 'black'
+        };
+        saveProfileToStorage(user.uid, userProfile);
+      }
+      
+      setProfile(userProfile);
+      navigate('/app');
+      
+      toast({
+        title: "Welcome!",
+        description: "You've successfully signed in with Google.",
+      });
+    } catch (error: any) {
+      console.error('Google sign-in error:', error.message);
+      toast({
+        variant: "destructive",
+        title: "Google sign-in failed",
+        description: error.message,
+      });
     }
   };
 
@@ -240,7 +307,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signIn,
     signUp,
     signOut,
-    updateProfile,
+    updateProfile: updateProfileFn,
     uploadAvatar,
     becomeCreator,
     saveThemePreference
