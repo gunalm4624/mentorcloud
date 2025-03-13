@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Mail, Lock, User, MailCheck, ArrowLeft, UserPlus } from "lucide-react";
+import { Sparkles, Mail, Lock, User, MailCheck, ArrowLeft } from "lucide-react";
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from "@/integrations/supabase/client";
 
 const AuthPage = () => {
   const navigate = useNavigate();

@@ -9,20 +9,30 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Layout = () => {
   const { isOpen } = useSidebar();
-  const { isLoading } = useAuth();
+  const { isLoading, profile } = useAuth();
 
   // Fix for dashboard menu by applying correct overflow handling
   useEffect(() => {
     document.body.style.overflow = 'hidden';
+    
+    // Apply user's theme if available
+    if (profile?.theme_color) {
+      document.documentElement.classList.add(`theme-${profile.theme_color}`);
+    } else {
+      // Default to black theme
+      document.documentElement.classList.add('theme-black');
+    }
+    
     return () => {
       document.body.style.overflow = '';
+      document.documentElement.classList.remove('theme-black', 'theme-blue', 'theme-green', 'theme-red', 'theme-orange', 'theme-purple');
     };
-  }, []);
+  }, [profile]);
 
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-600 border-t-transparent"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-theme-color border-t-transparent"></div>
       </div>
     );
   }

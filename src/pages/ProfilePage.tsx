@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { User, Upload, Plus } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
+import { ThemeColorPicker } from '@/components/theme/ThemeColorPicker';
 
 const ProfilePage = () => {
   const { profile, isLoading, updateProfile, uploadAvatar, becomeCreator } = useAuth();
@@ -70,14 +71,14 @@ const ProfilePage = () => {
             <div className="flex flex-col items-center space-y-4 md:flex-row md:space-y-0 md:space-x-6 md:items-start">
               <div className="relative">
                 <Avatar 
-                  className="h-24 w-24 cursor-pointer ring-2 ring-purple-200 dark:ring-purple-800"
+                  className="h-24 w-24 cursor-pointer ring-2 ring-theme-color/20"
                   onClick={handleAvatarClick}
                 >
                   <AvatarImage 
                     src={profile?.avatar_url || ''} 
                     alt={profile?.full_name || 'User'} 
                   />
-                  <AvatarFallback className="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 text-xl">
+                  <AvatarFallback className="bg-theme-color/10 text-theme-color text-xl">
                     {profile?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
                   </AvatarFallback>
                 </Avatar>
@@ -87,7 +88,7 @@ const ProfilePage = () => {
                   </div>
                 )}
                 <div className="absolute bottom-0 right-0">
-                  <div className="flex items-center justify-center h-8 w-8 rounded-full bg-purple-600 text-white">
+                  <div className="flex items-center justify-center h-8 w-8 rounded-full theme-bg">
                     <Upload className="h-4 w-4" />
                   </div>
                   <input 
@@ -112,7 +113,7 @@ const ProfilePage = () => {
                       />
                     </div>
                     <div className="flex space-x-2">
-                      <Button onClick={handleSaveProfile}>Save Changes</Button>
+                      <Button onClick={handleSaveProfile} className="theme-bg">Save Changes</Button>
                       <Button 
                         variant="outline" 
                         onClick={() => {
@@ -131,7 +132,7 @@ const ProfilePage = () => {
                       <p className="text-muted-foreground">{profile?.id}</p>
                       <div className="flex mt-2">
                         {profile?.is_creator ? (
-                          <Badge className="bg-purple-600">Creator</Badge>
+                          <Badge className="theme-bg">Creator</Badge>
                         ) : (
                           <Button 
                             variant="outline" 
@@ -149,6 +150,13 @@ const ProfilePage = () => {
                 )}
               </div>
             </div>
+
+            {profile?.is_creator && (
+              <div className="mt-8 pt-6 border-t">
+                <h3 className="font-semibold mb-4">Creator Settings</h3>
+                <ThemeColorPicker />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -163,12 +171,12 @@ const ProfilePage = () => {
                 <div className="p-4 border rounded-lg">
                   <h3 className="font-semibold">Your Courses</h3>
                   <p className="text-muted-foreground text-sm my-2">Create and manage your courses</p>
-                  <Button className="w-full mt-2">Manage Courses</Button>
+                  <Button className="w-full mt-2 theme-bg">Manage Courses</Button>
                 </div>
                 <div className="p-4 border rounded-lg">
                   <h3 className="font-semibold">Your Mentorships</h3>
                   <p className="text-muted-foreground text-sm my-2">Set up and manage mentorship sessions</p>
-                  <Button className="w-full mt-2">Manage Mentorships</Button>
+                  <Button className="w-full mt-2 theme-bg">Manage Mentorships</Button>
                 </div>
               </div>
             </CardContent>
