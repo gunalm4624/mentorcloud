@@ -13,6 +13,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/integrations/firebase/client';
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from '@/integrations/supabase/client';
 
 interface Profile {
   id: string;
@@ -24,7 +25,7 @@ interface Profile {
 
 interface AuthContextType {
   session: FirebaseUser | null;
-  user: FirebaseUser | null; // Add this line
+  user: FirebaseUser | null;
   profile: Profile | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
@@ -34,6 +35,7 @@ interface AuthContextType {
   uploadAvatar: (file: File) => Promise<{ success: boolean, avatarUrl?: string }>;
   becomeCreator: () => Promise<{ success: boolean, error?: any }>;
   saveThemePreference: (themeColor: string) => Promise<{ success: boolean, error?: any }>;
+  signInWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,6 +67,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return profiles[userId] || null;
   };
 
+  // Create or update profile in Supabase
+  const syncProfileWithSupabase = async (user: FirebaseUser, profileData: Profile) => {
+    try {
+      // Check if profile exists in Supabase
+      const { data: existingProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.uid)
+        .maybeSingle();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error checking profile in Supabase:', fetchError);
+        return;
+      }
+
+      if (existingProfile) {
+        // Update existing profile
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            full_name: profileData.full_name,
+            avatar_url: profileData.avatar_url,
+            is_creator: profileData.is_creator,
+            theme_color: profileData.theme_color
+          })
+          .eq('id', user.uid);
+
+        if (updateError) {
+          console.error('Error updating profile in Supabase:', updateError);
+        }
+      } else {
+        // Insert new profile
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: user.uid,
+            full_name: profileData.full_name,
+            avatar_url: profileData.avatar_url,
+            is_creator: profileData.is_creator || false,
+            theme_color: profileData.theme_color || 'black'
+          }]);
+
+        if (insertError) {
+          console.error('Error inserting profile in Supabase:', insertError);
+        }
+      }
+    } catch (error) {
+      console.error('Error syncing profile with Supabase:', error);
+    }
+  };
+
   useEffect(() => {
     initializeUserProfiles();
     
@@ -88,6 +141,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         
         setProfile(userProfile);
+        
+        // Sync profile with Supabase
+        syncProfileWithSupabase(user, userProfile);
       } else {
         setProfile(null);
       }
@@ -140,6 +196,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       saveProfileToStorage(user.uid, newProfile);
       setProfile(newProfile);
       
+      // Sync with Supabase
+      await syncProfileWithSupabase(user, newProfile);
+      
       toast({
         title: "Account created!",
         description: "Your account has been successfully created.",
@@ -184,6 +243,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // Update the profile state
       setProfile(updatedProfile);
+      
+      // Sync with Supabase
+      await syncProfileWithSupabase(session, updatedProfile);
       
       return { success: true };
     } catch (error: any) {
@@ -263,7 +325,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const signInWithGoogle = async () => {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
@@ -282,6 +344,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           theme_color: 'black'
         };
         saveProfileToStorage(user.uid, userProfile);
+        
+        // Sync with Supabase
+        await syncProfileWithSupabase(user, userProfile);
       }
       
       setProfile(userProfile);
@@ -303,7 +368,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const value = {
     session,
-    user: session, // Add this line to expose user property
+    user: session,
     profile,
     isLoading,
     signIn,
@@ -312,7 +377,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     updateProfile: updateProfileFn,
     uploadAvatar,
     becomeCreator,
-    saveThemePreference
+    saveThemePreference,
+    signInWithGoogle
   };
 
   return (

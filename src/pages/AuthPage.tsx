@@ -10,14 +10,12 @@ import { Sparkles, Mail, Lock, User, MailCheck, ArrowLeft } from "lucide-react";
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from '@/contexts/AuthContext';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '@/integrations/firebase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const AuthPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn, signUp, isLoading, session } = useAuth();
+  const { signIn, signUp, isLoading, session, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -52,25 +50,6 @@ const AuthPage = () => {
       navigate('/app');
     } catch (error) {
       // Error is handled in the signUp function
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      navigate('/app');
-      toast({
-        title: "Welcome!",
-        description: "You've successfully signed in with Google.",
-      });
-    } catch (error: any) {
-      console.error('Google sign-in error:', error);
-      toast({
-        variant: "destructive",
-        title: "Google sign-in failed",
-        description: error.message,
-      });
     }
   };
 
@@ -201,7 +180,7 @@ const AuthPage = () => {
                 <Button 
                   type="button"
                   variant="outline" 
-                  onClick={handleGoogleSignIn}
+                  onClick={signInWithGoogle}
                   disabled={isLoading}
                   className="w-full"
                 >
@@ -301,7 +280,7 @@ const AuthPage = () => {
                 <Button 
                   type="button"
                   variant="outline" 
-                  onClick={handleGoogleSignIn}
+                  onClick={signInWithGoogle}
                   disabled={isLoading}
                   className="w-full"
                 >
