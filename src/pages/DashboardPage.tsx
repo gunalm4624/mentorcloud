@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, ClockIcon, BookOpenIcon, PlayIcon } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const DashboardPage = () => {
   const currentCourses = [
@@ -88,7 +89,9 @@ const DashboardPage = () => {
               </div>
             )}
             {currentCourses.length > 0 && (
-              <Button variant="outline" className="w-full mt-2">View All Courses</Button>
+              <Button variant="outline" className="w-full mt-2" asChild>
+                <Link to="/app/explore">View All Courses</Link>
+              </Button>
             )}
           </CardContent>
         </Card>
@@ -134,7 +137,9 @@ const DashboardPage = () => {
               </div>
             )}
             {upcomingSessions.length > 0 && (
-              <Button variant="outline" className="w-full mt-2">View All Sessions</Button>
+              <Button variant="outline" className="w-full mt-2" asChild>
+                <Link to="/app/mentorship">View All Sessions</Link>
+              </Button>
             )}
           </CardContent>
         </Card>

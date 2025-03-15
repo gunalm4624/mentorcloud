@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 export function Sidebar() {
   const { isOpen, toggle } = useSidebar();
   const location = useLocation();
-  const { profile, user } = useAuth();
+  const { profile, session } = useAuth();
 
   // Get initials from full name
   const getInitials = (name?: string | null) => {
@@ -115,7 +115,7 @@ export function Sidebar() {
                   {isOpen && (
                     <div className="flex items-center justify-between w-full">
                       <span>{item.label}</span>
-                      {item.badge && (
+                      {'badge' in item && item.badge && (
                         <Badge variant="outline" className="ml-2 text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">
                           {item.badge}
                         </Badge>
@@ -145,7 +145,7 @@ export function Sidebar() {
             {isOpen && (
               <div className="flex flex-col">
                 <span className="text-sm font-medium">{profile?.full_name || 'User'}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{session?.email}</span>
               </div>
             )}
           </div>
