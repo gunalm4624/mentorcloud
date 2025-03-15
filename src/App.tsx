@@ -19,6 +19,7 @@ import DashboardPage from "./pages/DashboardPage";
 import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
 import LandingPage from "./pages/LandingPage";
+import CreateCoursePage from "./pages/CreateCoursePage";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const AppRoutes = () => (
         <Route index element={<HomePage />} />
         <Route path="explore" element={<ExplorePage />} />
         <Route path="course/:id" element={<CoursePage />} />
+        <Route path="create-course" element={<CreateCoursePage />} />
         <Route path="mentorship" element={<MentorshipPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="profile/:id" element={<ProfilePage />} />
