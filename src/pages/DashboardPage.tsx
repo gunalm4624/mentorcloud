@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -11,7 +10,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, ClockIcon, BookOpenIcon, PlayIcon, CreditCard as CreditCardIcon } from "lucide-react";
+import { CalendarIcon, ClockIcon, BookOpenIcon, PlayIcon, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -255,7 +254,7 @@ const DashboardPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-center py-6">
-                  <CreditCardIcon className="mx-auto h-10 w-10 text-muted-foreground/60" />
+                  <CreditCard className="mx-auto h-10 w-10 text-muted-foreground/60" />
                   <h3 className="mt-4 text-lg font-medium">No earnings yet</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
                     You don't have any earnings yet. Create and publish courses to start earning.
