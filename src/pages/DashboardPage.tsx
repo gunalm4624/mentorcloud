@@ -11,7 +11,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, ClockIcon, BookOpenIcon, PlayIcon } from "lucide-react";
+import { CalendarIcon, ClockIcon, BookOpenIcon, PlayIcon, CreditCard as CreditCardIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 

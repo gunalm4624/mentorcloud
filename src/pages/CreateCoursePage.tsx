@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner'; // Use sonner directly instead of re-export
+import { toast } from 'sonner'; 
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -227,30 +227,34 @@ const CreateCoursePage = () => {
 
       const courseId = courseData.id;
 
-      // Create the sections using RPC
+      // Create sections directly using the table instead of RPC
       for (const section of sections) {
         const { data: sectionData, error: sectionError } = await supabase
-          .rpc('create_course_section', { 
-            course_id_param: courseId,
-            title_param: section.title,
-            order_number_param: section.order_number
-          });
+          .from('course_sections')
+          .insert({
+            course_id: courseId,
+            title: section.title,
+            order_number: section.order_number
+          })
+          .select()
+          .single();
 
         if (sectionError) throw sectionError;
         
-        const sectionId = sectionData;
+        const sectionId = sectionData.id;
 
-        // Create the lessons for this section using RPC
+        // Create lessons directly using the table instead of RPC
         for (const lesson of section.lessons) {
           const { error: lessonError } = await supabase
-            .rpc('create_course_lesson', {
-              section_id_param: sectionId,
-              title_param: lesson.title,
-              description_param: lesson.description,
-              video_url_param: lesson.video_url,
-              duration_param: lesson.duration,
-              is_preview_param: lesson.is_preview,
-              order_number_param: lesson.order_number
+            .from('course_lessons')
+            .insert({
+              section_id: sectionId,
+              title: lesson.title,
+              description: lesson.description,
+              video_url: lesson.video_url,
+              duration: lesson.duration,
+              is_preview: lesson.is_preview,
+              order_number: lesson.order_number
             });
 
           if (lessonError) throw lessonError;

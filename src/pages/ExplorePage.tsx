@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -51,12 +52,38 @@ const ExplorePage = () => {
 
       if (error) throw error;
 
-      // Modified approach: use RPC to count lessons
+      // Modified approach: count lessons directly from the tables
       const coursesWithLessonCount = await Promise.all(
         data.map(async (course) => {
-          // Use a custom RPC function to get lesson count
+          // First get sections for the course
+          const { data: sections, error: sectionsError } = await supabase
+            .from('course_sections')
+            .select('id')
+            .eq('course_id', course.id);
+          
+          if (sectionsError) {
+            console.error("Error fetching sections:", sectionsError);
+            return { 
+              ...course, 
+              creator: course.profiles,
+              lesson_count: 0 
+            };
+          }
+          
+          if (!sections || sections.length === 0) {
+            return { 
+              ...course, 
+              creator: course.profiles,
+              lesson_count: 0 
+            };
+          }
+          
+          // Then count lessons across all sections
+          const sectionIds = sections.map(section => section.id);
           const { count, error: countError } = await supabase
-            .rpc('get_course_lesson_count', { course_id_param: course.id });
+            .from('course_lessons')
+            .select('*', { count: 'exact', head: true })
+            .in('section_id', sectionIds);
           
           if (countError) {
             console.error("Error counting lessons:", countError);

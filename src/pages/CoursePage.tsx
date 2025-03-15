@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,6 +59,25 @@ interface Course {
   sections: CourseSection[];
 }
 
+// Define the expected RPC response types
+interface SectionData {
+  id: string;
+  title: string;
+  order_number: number;
+  course_id: string;
+}
+
+interface LessonData {
+  id: string;
+  title: string;
+  description: string | null;
+  video_url: string | null;
+  duration: string | null;
+  is_preview: boolean;
+  order_number: number;
+  section_id: string;
+}
+
 const CoursePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -81,8 +101,12 @@ const CoursePage = () => {
       if (courseError) throw courseError;
       if (!courseData) throw new Error('Course not found');
 
+      // Get course sections using a regular query instead of RPC
       const { data: sectionsData, error: sectionsError } = await supabase
-        .rpc('get_course_sections', { course_id_param: id });
+        .from('course_sections')
+        .select('*')
+        .eq('course_id', id)
+        .order('order_number');
 
       if (sectionsError) throw sectionsError;
 
@@ -90,8 +114,12 @@ const CoursePage = () => {
 
       if (sectionsData && Array.isArray(sectionsData)) {
         for (const section of sectionsData) {
+          // Get lessons for each section using a regular query
           const { data: lessonsData, error: lessonsError } = await supabase
-            .rpc('get_section_lessons', { section_id_param: section.id });
+            .from('course_lessons')
+            .select('*')
+            .eq('section_id', section.id)
+            .order('order_number');
 
           if (lessonsError) throw lessonsError;
 
