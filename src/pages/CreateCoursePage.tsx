@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from "@/components/ui/sonner";
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner'; // Use sonner directly instead of re-export
+import { useForm } from 'react-hook-form';
+import { supabase } from '@/integrations/supabase/client';
 
 import {
   Card,
@@ -15,7 +16,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
@@ -27,858 +27,515 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { 
   PlusCircle, 
-  X, 
-  ArrowUp, 
-  ArrowDown, 
-  Edit, 
-  Trash,
-  ImagePlus,
-  FileVideo 
-} from "lucide-react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+  Trash2, 
+  Upload,
+  FileVideo,
+  GripVertical,
+  AlertCircle
+} from 'lucide-react';
 
-// Form validation schemas
-const courseFormSchema = z.object({
-  title: z.string().min(3, { message: "Title must be at least 3 characters" }),
-  description: z.string().min(10, { message: "Description must be at least 10 characters" }),
-  price: z.coerce.number().min(0, { message: "Price must be 0 or greater" }).optional(),
-  image_url: z.string().url({ message: "Please enter a valid URL" }).optional(),
-});
+interface CourseFormValues {
+  title: string;
+  description: string;
+  price: string;
+  image_url: string;
+}
 
-const sectionFormSchema = z.object({
-  title: z.string().min(3, { message: "Section title must be at least 3 characters" }),
-});
-
-const lessonFormSchema = z.object({
-  title: z.string().min(3, { message: "Lesson title must be at least 3 characters" }),
-  description: z.string().optional(),
-  video_url: z.string().url({ message: "Please enter a valid URL" }),
-  duration: z.string().optional(),
-  is_preview: z.boolean().default(false),
-});
-
-// Types for our course data
-type Section = {
+interface Section {
   id: string;
   title: string;
   order_number: number;
   lessons: Lesson[];
-  isNew?: boolean;
-};
+}
 
-type Lesson = {
+interface Lesson {
   id: string;
   title: string;
-  description?: string;
+  description: string;
   video_url: string;
-  duration?: string;
+  duration: string;
   is_preview: boolean;
   order_number: number;
-  isNew?: boolean;
-};
+}
+
+const generateId = () => Math.random().toString(36).substring(2, 9);
 
 const CreateCoursePage = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [sections, setSections] = useState<Section[]>([]);
-  const [currentSection, setCurrentSection] = useState<Section | null>(null);
-  const [isAddingSectionOpen, setIsAddingSectionOpen] = useState(false);
-  const [isAddingLessonOpen, setIsAddingLessonOpen] = useState(false);
-  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
-  const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
-
-  // Course form
-  const courseForm = useForm<z.infer<typeof courseFormSchema>>({
-    resolver: zodResolver(courseFormSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      price: 0,
-      image_url: "",
-    },
-  });
-
-  // Section form
-  const sectionForm = useForm<z.infer<typeof sectionFormSchema>>({
-    resolver: zodResolver(sectionFormSchema),
-    defaultValues: {
-      title: "",
-    },
-  });
-
-  // Lesson form
-  const lessonForm = useForm<z.infer<typeof lessonFormSchema>>({
-    resolver: zodResolver(lessonFormSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      video_url: "",
-      duration: "",
-      is_preview: false,
-    },
-  });
-
-  // Add a new section
-  const handleAddSection = (data: z.infer<typeof sectionFormSchema>) => {
-    const newSection: Section = {
-      id: `temp-${Date.now()}`,
-      title: data.title,
-      order_number: sections.length + 1,
-      lessons: [],
-      isNew: true,
-    };
-
-    if (editingSectionId) {
-      // Update existing section
-      setSections(
-        sections.map((section) =>
-          section.id === editingSectionId
-            ? { ...section, title: data.title }
-            : section
-        )
-      );
-      setEditingSectionId(null);
-    } else {
-      // Add new section
-      setSections([...sections, newSection]);
-    }
-
-    sectionForm.reset();
-    setIsAddingSectionOpen(false);
-  };
-
-  // Edit a section
-  const handleEditSection = (section: Section) => {
-    setEditingSectionId(section.id);
-    sectionForm.setValue("title", section.title);
-    setIsAddingSectionOpen(true);
-  };
-
-  // Delete a section
-  const handleDeleteSection = (sectionId: string) => {
-    setSections(sections.filter((section) => section.id !== sectionId));
-  };
-
-  // Move section up
-  const handleMoveSectionUp = (index: number) => {
-    if (index > 0) {
-      const newSections = [...sections];
-      [newSections[index - 1], newSections[index]] = [
-        newSections[index],
-        newSections[index - 1],
-      ];
-      
-      // Update order numbers
-      newSections.forEach((section, idx) => {
-        section.order_number = idx + 1;
-      });
-      
-      setSections(newSections);
-    }
-  };
-
-  // Move section down
-  const handleMoveSectionDown = (index: number) => {
-    if (index < sections.length - 1) {
-      const newSections = [...sections];
-      [newSections[index], newSections[index + 1]] = [
-        newSections[index + 1],
-        newSections[index],
-      ];
-      
-      // Update order numbers
-      newSections.forEach((section, idx) => {
-        section.order_number = idx + 1;
-      });
-      
-      setSections(newSections);
-    }
-  };
-
-  // Add a new lesson
-  const handleAddLesson = (data: z.infer<typeof lessonFormSchema>) => {
-    if (!currentSection) return;
-
-    const newLesson: Lesson = {
-      id: `temp-${Date.now()}`,
-      title: data.title,
-      description: data.description,
-      video_url: data.video_url,
-      duration: data.duration,
-      is_preview: data.is_preview,
-      order_number: currentSection.lessons.length + 1,
-      isNew: true,
-    };
-
-    if (editingLessonId) {
-      // Update existing lesson
-      const updatedSections = sections.map((section) => {
-        if (section.id === currentSection.id) {
-          return {
-            ...section,
-            lessons: section.lessons.map((lesson) =>
-              lesson.id === editingLessonId
-                ? { ...lesson, ...data }
-                : lesson
-            ),
-          };
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sections, setSections] = useState<Section[]>([
+    {
+      id: generateId(),
+      title: 'Introduction',
+      order_number: 1,
+      lessons: [
+        {
+          id: generateId(),
+          title: 'Welcome to the course',
+          description: 'A brief introduction to what you will learn.',
+          video_url: '',
+          duration: '5',
+          is_preview: true,
+          order_number: 1
         }
-        return section;
-      });
-      setSections(updatedSections);
-      setEditingLessonId(null);
-    } else {
-      // Add new lesson
-      const updatedSections = sections.map((section) => {
-        if (section.id === currentSection.id) {
-          return {
-            ...section,
-            lessons: [...section.lessons, newLesson],
-          };
-        }
-        return section;
-      });
-      setSections(updatedSections);
+      ]
     }
+  ]);
 
-    lessonForm.reset();
-    setIsAddingLessonOpen(false);
+  const form = useForm<CourseFormValues>({
+    defaultValues: {
+      title: '',
+      description: '',
+      price: '',
+      image_url: ''
+    }
+  });
+
+  const addSection = () => {
+    setSections([
+      ...sections,
+      {
+        id: generateId(),
+        title: `Section ${sections.length + 1}`,
+        order_number: sections.length + 1,
+        lessons: []
+      }
+    ]);
   };
 
-  // Edit a lesson
-  const handleEditLesson = (sectionId: string, lesson: Lesson) => {
-    setCurrentSection(sections.find((s) => s.id === sectionId) || null);
-    setEditingLessonId(lesson.id);
-    
-    lessonForm.setValue("title", lesson.title);
-    lessonForm.setValue("description", lesson.description || "");
-    lessonForm.setValue("video_url", lesson.video_url);
-    lessonForm.setValue("duration", lesson.duration || "");
-    lessonForm.setValue("is_preview", lesson.is_preview);
-    
-    setIsAddingLessonOpen(true);
+  const removeSection = (sectionId: string) => {
+    setSections(sections.filter(section => section.id !== sectionId));
   };
 
-  // Delete a lesson
-  const handleDeleteLesson = (sectionId: string, lessonId: string) => {
-    const updatedSections = sections.map((section) => {
+  const updateSectionTitle = (sectionId: string, title: string) => {
+    setSections(sections.map(section => 
+      section.id === sectionId 
+        ? { ...section, title } 
+        : section
+    ));
+  };
+
+  const addLesson = (sectionId: string) => {
+    setSections(sections.map(section => {
       if (section.id === sectionId) {
         return {
           ...section,
-          lessons: section.lessons.filter((lesson) => lesson.id !== lessonId),
+          lessons: [
+            ...section.lessons,
+            {
+              id: generateId(),
+              title: `Lesson ${section.lessons.length + 1}`,
+              description: '',
+              video_url: '',
+              duration: '',
+              is_preview: false,
+              order_number: section.lessons.length + 1
+            }
+          ]
         };
       }
       return section;
-    });
-    setSections(updatedSections);
+    }));
   };
 
-  // Move lesson up
-  const handleMoveLessonUp = (sectionId: string, index: number) => {
-    if (index > 0) {
-      const updatedSections = sections.map((section) => {
-        if (section.id === sectionId) {
-          const newLessons = [...section.lessons];
-          [newLessons[index - 1], newLessons[index]] = [
-            newLessons[index],
-            newLessons[index - 1],
-          ];
-          
-          // Update order numbers
-          newLessons.forEach((lesson, idx) => {
-            lesson.order_number = idx + 1;
-          });
-          
-          return {
-            ...section,
-            lessons: newLessons,
-          };
-        }
-        return section;
-      });
-      setSections(updatedSections);
+  const removeLesson = (sectionId: string, lessonId: string) => {
+    setSections(sections.map(section => {
+      if (section.id === sectionId) {
+        return {
+          ...section,
+          lessons: section.lessons.filter(lesson => lesson.id !== lessonId)
+        };
+      }
+      return section;
+    }));
+  };
+
+  const updateLesson = (sectionId: string, lessonId: string, updates: Partial<Lesson>) => {
+    setSections(sections.map(section => {
+      if (section.id === sectionId) {
+        return {
+          ...section,
+          lessons: section.lessons.map(lesson => 
+            lesson.id === lessonId 
+              ? { ...lesson, ...updates } 
+              : lesson
+          )
+        };
+      }
+      return section;
+    }));
+  };
+
+  const onSubmit = async (values: CourseFormValues) => {
+    if (!profile) {
+      toast.error("You must be logged in to create a course");
+      return;
     }
-  };
 
-  // Move lesson down
-  const handleMoveLessonDown = (sectionId: string, index: number) => {
-    const section = sections.find(s => s.id === sectionId);
-    if (section && index < section.lessons.length - 1) {
-      const updatedSections = sections.map((section) => {
-        if (section.id === sectionId) {
-          const newLessons = [...section.lessons];
-          [newLessons[index], newLessons[index + 1]] = [
-            newLessons[index + 1],
-            newLessons[index],
-          ];
-          
-          // Update order numbers
-          newLessons.forEach((lesson, idx) => {
-            lesson.order_number = idx + 1;
-          });
-          
-          return {
-            ...section,
-            lessons: newLessons,
-          };
-        }
-        return section;
-      });
-      setSections(updatedSections);
-    }
-  };
-
-  // Submit the course
-  const onSubmitCourse = async (data: z.infer<typeof courseFormSchema>) => {
-    if (!profile?.is_creator) {
-      toast.error("You need to be a creator to publish courses");
+    if (!profile.is_creator) {
+      toast.error("You must be a creator to publish courses");
       return;
     }
 
     if (sections.length === 0) {
-      toast.error("Please add at least one section with lessons");
+      toast.error("You must add at least one section");
+      return;
+    }
+
+    let hasContent = false;
+    for (const section of sections) {
+      if (section.lessons.length > 0) {
+        hasContent = true;
+        break;
+      }
+    }
+
+    if (!hasContent) {
+      toast.error("You must add at least one lesson");
       return;
     }
 
     try {
-      setIsLoading(true);
+      setIsSubmitting(true);
 
-      // 1. Create course
+      // Create the course
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
         .insert({
-          title: data.title,
-          description: data.description,
-          price: data.price,
-          image_url: data.image_url,
+          title: values.title,
+          description: values.description,
+          price: values.price ? parseFloat(values.price) : null,
+          image_url: values.image_url,
           creator_id: profile.id
         })
         .select()
         .single();
 
       if (courseError) throw courseError;
+      if (!courseData) throw new Error("Failed to create course");
 
       const courseId = courseData.id;
 
-      // 2. Create sections
+      // Create the sections using RPC
       for (const section of sections) {
         const { data: sectionData, error: sectionError } = await supabase
-          .from('course_sections')
-          .insert({
-            course_id: courseId,
-            title: section.title,
-            order_number: section.order_number
-          })
-          .select()
-          .single();
+          .rpc('create_course_section', { 
+            course_id_param: courseId,
+            title_param: section.title,
+            order_number_param: section.order_number
+          });
 
         if (sectionError) throw sectionError;
+        
+        const sectionId = sectionData;
 
-        const sectionId = sectionData.id;
+        // Create the lessons for this section using RPC
+        for (const lesson of section.lessons) {
+          const { error: lessonError } = await supabase
+            .rpc('create_course_lesson', {
+              section_id_param: sectionId,
+              title_param: lesson.title,
+              description_param: lesson.description,
+              video_url_param: lesson.video_url,
+              duration_param: lesson.duration,
+              is_preview_param: lesson.is_preview,
+              order_number_param: lesson.order_number
+            });
 
-        // 3. Create lessons for this section
-        if (section.lessons.length > 0) {
-          const lessonsToInsert = section.lessons.map(lesson => ({
-            section_id: sectionId,
-            title: lesson.title,
-            description: lesson.description || null,
-            video_url: lesson.video_url,
-            duration: lesson.duration || null,
-            is_preview: lesson.is_preview,
-            order_number: lesson.order_number
-          }));
-
-          const { error: lessonsError } = await supabase
-            .from('course_lessons')
-            .insert(lessonsToInsert);
-
-          if (lessonsError) throw lessonsError;
+          if (lessonError) throw lessonError;
         }
       }
 
-      toast.success("Course published successfully!");
+      toast.success("Course created successfully!");
       navigate(`/app/course/${courseId}`);
-    } catch (error) {
-      console.error("Error publishing course:", error);
-      toast.error("Failed to publish course");
+    } catch (error: any) {
+      console.error("Error creating course:", error);
+      toast.error(error.message || "Failed to create course");
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Create Course</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Create New Course</h1>
       </div>
 
-      <div className="grid gap-6">
-        <Form {...courseForm}>
-          <form onSubmit={courseForm.handleSubmit(onSubmitCourse)}>
-            <Card>
-              <CardHeader>
-                <CardTitle>Course Details</CardTitle>
-                <CardDescription>
-                  Enter the basic information about your course
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={courseForm.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Course Title</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Complete React Developer Course" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Course Details</CardTitle>
+              <CardDescription>
+                Provide the basic information about your course.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Course Title</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="e.g., Complete Web Development Bootcamp" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      A clear and concise title that describes your course.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe what students will learn in this course..." 
+                        className="min-h-32" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Provide a detailed description of your course content and learning outcomes.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
-                  control={courseForm.control}
-                  name="description"
+                  control={form.control}
+                  name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>Price (USD)</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="What will students learn in this course?" 
+                        <Input 
+                          type="number" 
+                          min="0" 
+                          step="0.01" 
+                          placeholder="e.g., 29.99" 
                           {...field} 
-                          className="min-h-[120px]"
                         />
                       </FormControl>
+                      <FormDescription>
+                        Leave empty if your course is free.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={courseForm.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Price ($)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            min="0" 
-                            step="0.01"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={courseForm.control}
-                    name="image_url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Course Thumbnail URL</FormLabel>
-                        <FormControl>
-                          <div className="flex space-x-2">
-                            <Input 
-                              placeholder="https://example.com/image.jpg" 
-                              {...field} 
-                            />
-                            <Button 
-                              type="button" 
-                              variant="outline" 
-                              size="icon"
-                              className="flex-shrink-0"
-                            >
-                              <ImagePlus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </FormControl>
-                        <FormDescription>
-                          Enter a URL for your course thumbnail image
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="mt-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <div>
-                    <CardTitle>Course Content</CardTitle>
-                    <CardDescription>
-                      Organize your course into sections and lessons
-                    </CardDescription>
-                  </div>
-                  <Dialog open={isAddingSectionOpen} onOpenChange={setIsAddingSectionOpen}>
-                    <DialogTrigger asChild>
-                      <Button onClick={() => {
-                        setEditingSectionId(null);
-                        sectionForm.reset({ title: "" });
-                      }}>
-                        <PlusCircle className="h-4 w-4 mr-2" />
-                        Add Section
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <Form {...sectionForm}>
-                        <form onSubmit={sectionForm.handleSubmit(handleAddSection)}>
-                          <DialogHeader>
-                            <DialogTitle>
-                              {editingSectionId ? "Edit Section" : "Add New Section"}
-                            </DialogTitle>
-                            <DialogDescription>
-                              Sections help organize your course content
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="py-4">
-                            <FormField
-                              control={sectionForm.control}
-                              name="title"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Section Title</FormLabel>
-                                  <FormControl>
-                                    <Input {...field} placeholder="e.g. Introduction" />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                          <DialogFooter>
-                            <Button 
-                              type="button" 
-                              variant="outline" 
-                              onClick={() => setIsAddingSectionOpen(false)}
-                            >
-                              Cancel
-                            </Button>
-                            <Button type="submit">
-                              {editingSectionId ? "Update Section" : "Add Section"}
-                            </Button>
-                          </DialogFooter>
-                        </form>
-                      </Form>
-                    </DialogContent>
-                  </Dialog>
-                </CardHeader>
-                <CardContent>
-                  {sections.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">
-                        No sections yet. Click "Add Section" to get started.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {sections.map((section, sectionIndex) => (
-                        <Card key={section.id} className="border-l-4 border-l-primary">
-                          <CardHeader className="py-3">
-                            <div className="flex items-start justify-between">
-                              <div className="space-y-1">
-                                <CardTitle className="text-base">
-                                  Section {sectionIndex + 1}: {section.title}
-                                </CardTitle>
-                                <CardDescription>
-                                  {section.lessons.length} lessons
-                                </CardDescription>
-                              </div>
-                              <div className="flex space-x-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleMoveSectionUp(sectionIndex)}
-                                  disabled={sectionIndex === 0}
-                                >
-                                  <ArrowUp className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleMoveSectionDown(sectionIndex)}
-                                  disabled={sectionIndex === sections.length - 1}
-                                >
-                                  <ArrowDown className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEditSection(section)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteSection(section.id)}
-                                >
-                                  <Trash className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="py-0">
-                            {section.lessons.length > 0 ? (
-                              <div className="space-y-2">
-                                {section.lessons.map((lesson, lessonIndex) => (
-                                  <div
-                                    key={lesson.id}
-                                    className="flex items-center justify-between p-2 rounded-md bg-muted/40"
-                                  >
-                                    <div className="flex items-center space-x-2">
-                                      <FileVideo className="h-4 w-4 text-muted-foreground" />
-                                      <div>
-                                        <p className="text-sm font-medium">{lesson.title}</p>
-                                        {lesson.duration && (
-                                          <p className="text-xs text-muted-foreground">
-                                            {lesson.duration} min
-                                          </p>
-                                        )}
-                                      </div>
-                                      {lesson.is_preview && (
-                                        <Badge variant="outline" className="ml-2 text-xs">
-                                          Preview
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    <div className="flex space-x-1">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleMoveLessonUp(section.id, lessonIndex)}
-                                        disabled={lessonIndex === 0}
-                                      >
-                                        <ArrowUp className="h-3 w-3" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleMoveLessonDown(section.id, lessonIndex)}
-                                        disabled={lessonIndex === section.lessons.length - 1}
-                                      >
-                                        <ArrowDown className="h-3 w-3" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleEditLesson(section.id, lesson)}
-                                      >
-                                        <Edit className="h-3 w-3" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleDeleteLesson(section.id, lesson.id)}
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <p className="text-sm text-muted-foreground py-2">
-                                No lessons yet.
-                              </p>
-                            )}
-                          </CardContent>
-                          <CardFooter className="py-3">
-                            <Dialog open={isAddingLessonOpen} onOpenChange={setIsAddingLessonOpen}>
-                              <DialogTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="w-full"
-                                  onClick={() => {
-                                    setCurrentSection(section);
-                                    setEditingLessonId(null);
-                                    lessonForm.reset({
-                                      title: "",
-                                      description: "",
-                                      video_url: "",
-                                      duration: "",
-                                      is_preview: false,
-                                    });
-                                  }}
-                                >
-                                  <PlusCircle className="h-4 w-4 mr-2" />
-                                  Add Lesson
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <Form {...lessonForm}>
-                                  <form onSubmit={lessonForm.handleSubmit(handleAddLesson)}>
-                                    <DialogHeader>
-                                      <DialogTitle>
-                                        {editingLessonId
-                                          ? "Edit Lesson"
-                                          : `Add Lesson to ${section.title}`}
-                                      </DialogTitle>
-                                      <DialogDescription>
-                                        Add lesson content to your course
-                                      </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="py-4 space-y-4">
-                                      <FormField
-                                        control={lessonForm.control}
-                                        name="title"
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel>Lesson Title</FormLabel>
-                                            <FormControl>
-                                              <Input {...field} placeholder="e.g. Getting Started" />
-                                            </FormControl>
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-
-                                      <FormField
-                                        control={lessonForm.control}
-                                        name="description"
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel>Description (Optional)</FormLabel>
-                                            <FormControl>
-                                              <Textarea 
-                                                {...field} 
-                                                placeholder="Brief description of what this lesson covers" 
-                                              />
-                                            </FormControl>
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-
-                                      <FormField
-                                        control={lessonForm.control}
-                                        name="video_url"
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel>Video URL</FormLabel>
-                                            <FormControl>
-                                              <Input 
-                                                {...field} 
-                                                placeholder="https://drive.google.com/file/d/..." 
-                                              />
-                                            </FormControl>
-                                            <FormDescription>
-                                              Enter Google Drive video link
-                                            </FormDescription>
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-
-                                      <div className="grid grid-cols-2 gap-4">
-                                        <FormField
-                                          control={lessonForm.control}
-                                          name="duration"
-                                          render={({ field }) => (
-                                            <FormItem>
-                                              <FormLabel>Duration (minutes)</FormLabel>
-                                              <FormControl>
-                                                <Input 
-                                                  {...field} 
-                                                  placeholder="e.g. 10" 
-                                                />
-                                              </FormControl>
-                                              <FormMessage />
-                                            </FormItem>
-                                          )}
-                                        />
-
-                                        <FormField
-                                          control={lessonForm.control}
-                                          name="is_preview"
-                                          render={({ field }) => (
-                                            <FormItem className="flex flex-row items-center justify-between space-x-3 space-y-0 rounded-md border p-4 mt-8">
-                                              <div className="space-y-1 leading-none">
-                                                <FormLabel>
-                                                  Preview Lesson
-                                                </FormLabel>
-                                                <FormDescription>
-                                                  Make this lesson available as a preview
-                                                </FormDescription>
-                                              </div>
-                                              <FormControl>
-                                                <input
-                                                  type="checkbox"
-                                                  checked={field.value}
-                                                  onChange={field.onChange}
-                                                  className="h-4 w-4 rounded"
-                                                />
-                                              </FormControl>
-                                            </FormItem>
-                                          )}
-                                        />
-                                      </div>
-                                    </div>
-                                    <DialogFooter>
-                                      <Button 
-                                        type="button" 
-                                        variant="outline" 
-                                        onClick={() => setIsAddingLessonOpen(false)}
-                                      >
-                                        Cancel
-                                      </Button>
-                                      <Button type="submit">
-                                        {editingLessonId ? "Update Lesson" : "Add Lesson"}
-                                      </Button>
-                                    </DialogFooter>
-                                  </form>
-                                </Form>
-                              </DialogContent>
-                            </Dialog>
-                          </CardFooter>
-                        </Card>
-                      ))}
-                    </div>
+                <FormField
+                  control={form.control}
+                  name="image_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Thumbnail URL</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="https://example.com/image.jpg" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Provide a URL for the course thumbnail image.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </CardContent>
-              </Card>
-            </div>
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-            <div className="mt-6 flex justify-end space-x-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => navigate("/app/dashboard")}
+          <Card>
+            <CardHeader>
+              <CardTitle>Course Content</CardTitle>
+              <CardDescription>
+                Organize your course into sections and lessons.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="multiple" defaultValue={["section-0"]} className="w-full">
+                {sections.map((section, sectionIndex) => (
+                  <AccordionItem 
+                    key={section.id} 
+                    value={`section-${sectionIndex}`}
+                    className="border border-gray-200 dark:border-gray-800 rounded-md mb-4"
+                  >
+                    <div className="flex items-center justify-between px-4">
+                      <AccordionTrigger className="py-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium">{section.title}</span>
+                          <Badge variant="outline">
+                            {section.lessons.length} {section.lessons.length === 1 ? 'lesson' : 'lessons'}
+                          </Badge>
+                        </div>
+                      </AccordionTrigger>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeSection(section.id);
+                        }}
+                        className="text-gray-500 hover:text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <AccordionContent className="px-4 pb-4">
+                      <div className="space-y-4">
+                        <Input
+                          placeholder="Section Title"
+                          value={section.title}
+                          onChange={(e) => updateSectionTitle(section.id, e.target.value)}
+                          className="border-gray-300 focus:ring-purple-500"
+                        />
+                        
+                        <div className="space-y-2">
+                          <div className="text-sm font-medium">Lessons</div>
+                          {section.lessons.length === 0 ? (
+                            <div className="text-sm text-muted-foreground py-2">
+                              No lessons added yet. Add your first lesson.
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {section.lessons.map((lesson, lessonIndex) => (
+                                <Card key={lesson.id}>
+                                  <CardContent className="p-3">
+                                    <div className="flex items-start gap-2">
+                                      <div className="pt-1">
+                                        <GripVertical className="h-5 w-5 text-gray-400" />
+                                      </div>
+                                      <div className="flex-1 space-y-2">
+                                        <Input
+                                          placeholder="Lesson Title"
+                                          value={lesson.title}
+                                          onChange={(e) => updateLesson(section.id, lesson.id, { title: e.target.value })}
+                                          className="border-gray-300"
+                                        />
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                          <Input
+                                            placeholder="Video URL (Google Drive)"
+                                            value={lesson.video_url}
+                                            onChange={(e) => updateLesson(section.id, lesson.id, { video_url: e.target.value })}
+                                            className="border-gray-300"
+                                          />
+                                          <Input
+                                            placeholder="Duration (minutes)"
+                                            type="number"
+                                            value={lesson.duration}
+                                            onChange={(e) => updateLesson(section.id, lesson.id, { duration: e.target.value })}
+                                            className="border-gray-300"
+                                          />
+                                        </div>
+                                        <Textarea
+                                          placeholder="Lesson Description"
+                                          value={lesson.description}
+                                          onChange={(e) => updateLesson(section.id, lesson.id, { description: e.target.value })}
+                                          className="border-gray-300 min-h-20"
+                                        />
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center space-x-2">
+                                            <Switch
+                                              checked={lesson.is_preview}
+                                              onCheckedChange={(checked) => updateLesson(section.id, lesson.id, { is_preview: checked })}
+                                              id={`preview-${lesson.id}`}
+                                            />
+                                            <label htmlFor={`preview-${lesson.id}`} className="text-sm">
+                                              Preview Lesson
+                                            </label>
+                                          </div>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            type="button"
+                                            onClick={() => removeLesson(section.id, lesson.id)}
+                                            className="text-gray-500 hover:text-red-500"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addLesson(section.id)}
+                            className="w-full mt-2"
+                          >
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Add Lesson
+                          </Button>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addSection}
+                className="w-full mt-4"
               >
-                Cancel
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Section
               </Button>
-              <Button 
-                type="submit" 
-                disabled={isLoading || sections.length === 0}
-                className="theme-bg"
-              >
-                {isLoading ? "Publishing..." : "Publish Course"}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/app/dashboard')}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {isSubmitting ? "Creating..." : "Create Course"}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   );
 };

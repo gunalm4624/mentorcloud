@@ -24,6 +24,7 @@ interface Profile {
 
 interface AuthContextType {
   session: FirebaseUser | null;
+  user: FirebaseUser | null; // Add this line
   profile: Profile | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
@@ -302,6 +303,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const value = {
     session,
+    user: session, // Add this line to expose user property
     profile,
     isLoading,
     signIn,

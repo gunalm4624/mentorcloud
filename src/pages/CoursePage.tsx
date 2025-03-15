@@ -1,9 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 import {
   Card,
@@ -26,9 +26,7 @@ import {
 } from "lucide-react";
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { toast } from '@/components/ui/sonner';
 
-// Types for our course data
 interface CourseSection {
   id: string;
   title: string;
@@ -66,13 +64,11 @@ const CoursePage = () => {
   const { profile } = useAuth();
   const [activeLesson, setActiveLesson] = useState<CourseLesson | null>(null);
   
-  // Fetch course data
   const { data: course, isLoading, error } = useQuery({
     queryKey: ['course', id],
     queryFn: async () => {
       if (!id) throw new Error('Course ID is required');
 
-      // Fetch the course
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
         .select(`
@@ -85,34 +81,27 @@ const CoursePage = () => {
       if (courseError) throw courseError;
       if (!courseData) throw new Error('Course not found');
 
-      // Fetch course sections
       const { data: sectionsData, error: sectionsError } = await supabase
-        .from('course_sections')
-        .select('id, title, order_number')
-        .eq('course_id', id)
-        .order('order_number');
+        .rpc('get_course_sections', { course_id_param: id });
 
       if (sectionsError) throw sectionsError;
 
       const sectionsWithLessons: CourseSection[] = [];
 
-      // Fetch lessons for each section
-      for (const section of sectionsData) {
-        const { data: lessonsData, error: lessonsError } = await supabase
-          .from('course_lessons')
-          .select('id, title, description, video_url, duration, is_preview, order_number')
-          .eq('section_id', section.id)
-          .order('order_number');
+      if (sectionsData && Array.isArray(sectionsData)) {
+        for (const section of sectionsData) {
+          const { data: lessonsData, error: lessonsError } = await supabase
+            .rpc('get_section_lessons', { section_id_param: section.id });
 
-        if (lessonsError) throw lessonsError;
+          if (lessonsError) throw lessonsError;
 
-        sectionsWithLessons.push({
-          ...section,
-          lessons: lessonsData || []
-        });
+          sectionsWithLessons.push({
+            ...section,
+            lessons: lessonsData || []
+          });
+        }
       }
 
-      // Format the final course data
       return {
         ...courseData,
         creator: courseData.profiles,
@@ -122,7 +111,6 @@ const CoursePage = () => {
     enabled: !!id
   });
 
-  // Set the first preview lesson as active by default
   useEffect(() => {
     if (course) {
       for (const section of course.sections) {
@@ -133,26 +121,23 @@ const CoursePage = () => {
         }
       }
 
-      // If no preview lessons, set the first lesson
       if (!activeLesson && course.sections.length > 0 && course.sections[0].lessons.length > 0) {
         setActiveLesson(course.sections[0].lessons[0]);
       }
     }
   }, [course]);
 
-  // Extract Google Drive file ID from URL
   const getGoogleDriveEmbedUrl = (url: string) => {
     if (!url) return '';
     
     try {
-      // Extract the file ID from Google Drive URL
       const fileIdMatch = url.match(/[-\w]{25,}/);
       
       if (fileIdMatch && fileIdMatch[0]) {
         return `https://drive.google.com/file/d/${fileIdMatch[0]}/preview`;
       }
       
-      return url; // Return original URL if we can't extract the ID
+      return url;
     } catch (error) {
       console.error("Error parsing video URL:", error);
       return url;
@@ -188,7 +173,6 @@ const CoursePage = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Video player and content area */}
         <div className="flex-1">
           <Card className="mb-6">
             <CardContent className="p-0 aspect-video">
@@ -294,7 +278,6 @@ const CoursePage = () => {
           </Tabs>
         </div>
         
-        {/* Course sidebar/info */}
         <div className="w-full md:w-80 space-y-4">
           <Card>
             <CardHeader>
@@ -348,7 +331,6 @@ const CoursePage = () => {
             </CardContent>
           </Card>
           
-          {/* Instructor info */}
           {course.creator && (
             <Card>
               <CardHeader>

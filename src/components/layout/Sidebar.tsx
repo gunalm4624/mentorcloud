@@ -20,6 +20,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 
+interface MenuItem {
+  icon: React.ElementType;
+  label: string;
+  path: string;
+  badge?: string;
+}
+
 export function Sidebar() {
   const { isOpen, toggle } = useSidebar();
   const location = useLocation();
@@ -31,7 +38,7 @@ export function Sidebar() {
     return name.split(' ').map(n => n[0]).join('');
   };
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { icon: HomeIcon, label: "Home", path: "/app" },
     { icon: SearchIcon, label: "Explore", path: "/app/explore" },
     { icon: BookOpenIcon, label: "My Courses", path: "/app/dashboard" },
@@ -39,7 +46,7 @@ export function Sidebar() {
   ];
 
   // Add creator menu items if the user is a creator
-  const creatorMenuItems = profile?.is_creator ? [
+  const creatorMenuItems: MenuItem[] = profile?.is_creator ? [
     { icon: Pencil, label: "Create Course", path: "/app/create-course", badge: "Creator" },
     { icon: CreditCardIcon, label: "Earnings", path: "/app/dashboard?tab=earnings", badge: "Creator" },
   ] : [];
@@ -115,7 +122,7 @@ export function Sidebar() {
                   {isOpen && (
                     <div className="flex items-center justify-between w-full">
                       <span>{item.label}</span>
-                      {'badge' in item && item.badge && (
+                      {item.badge && (
                         <Badge variant="outline" className="ml-2 text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">
                           {item.badge}
                         </Badge>
@@ -145,7 +152,7 @@ export function Sidebar() {
             {isOpen && (
               <div className="flex flex-col">
                 <span className="text-sm font-medium">{profile?.full_name || 'User'}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{session?.email}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{session?.email || ''}</span>
               </div>
             )}
           </div>
