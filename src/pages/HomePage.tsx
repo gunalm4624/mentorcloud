@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpenIcon, CalendarIcon, PlayIcon, StarIcon, TrendingUpIcon, UserIcon } from "lucide-react";
@@ -138,7 +137,7 @@ const HomePage = () => {
                       <div className="flex justify-between items-center">
                         <p className="text-sm font-medium">Next: {course.nextModule}</p>
                         <Button asChild>
-                          <Link to={`/course/${course.id}`}>Continue</Link>
+                          <Link to={`/app/course/${course.id}`}>Continue</Link>
                         </Button>
                       </div>
                     </div>
@@ -186,7 +185,7 @@ const HomePage = () => {
                   <span className="font-bold">${course.price}</span>
                 </div>
                 <Button asChild className="w-full">
-                  <Link to={`/course/${course.id}`}>View Course</Link>
+                  <Link to={`/app/course/${course.id}`}>View Course</Link>
                 </Button>
               </CardContent>
             </Card>

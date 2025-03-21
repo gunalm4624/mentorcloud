@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -52,55 +51,15 @@ const ExplorePage = () => {
 
       if (error) throw error;
 
-      // Modified approach: count lessons directly from the tables
-      const coursesWithLessonCount = await Promise.all(
-        data.map(async (course) => {
-          // First get sections for the course
-          const { data: sections, error: sectionsError } = await supabase
-            .from('course_sections')
-            .select('id')
-            .eq('course_id', course.id);
-          
-          if (sectionsError) {
-            console.error("Error fetching sections:", sectionsError);
-            return { 
-              ...course, 
-              creator: course.profiles,
-              lesson_count: 0 
-            };
-          }
-          
-          if (!sections || sections.length === 0) {
-            return { 
-              ...course, 
-              creator: course.profiles,
-              lesson_count: 0 
-            };
-          }
-          
-          // Then count lessons across all sections
-          const sectionIds = sections.map(section => section.id);
-          const { count, error: countError } = await supabase
-            .from('course_lessons')
-            .select('*', { count: 'exact', head: true })
-            .in('section_id', sectionIds);
-          
-          if (countError) {
-            console.error("Error counting lessons:", countError);
-            return { 
-              ...course, 
-              creator: course.profiles,
-              lesson_count: 0 
-            };
-          }
-
-          return { 
-            ...course, 
-            creator: course.profiles,
-            lesson_count: count || 0 
-          };
-        })
-      );
+      // Modified approach: For now, let's set a static lesson count
+      // This is a simplification until course_sections and course_lessons tables are created
+      const coursesWithLessonCount = data.map(course => {
+        return { 
+          ...course, 
+          creator: course.profiles,
+          lesson_count: 3 // Static count for now
+        };
+      });
 
       return coursesWithLessonCount as Course[];
     }
