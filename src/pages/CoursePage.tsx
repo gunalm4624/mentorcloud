@@ -80,8 +80,17 @@ const CoursePage = () => {
         .eq('id', id)
         .single();
 
-      if (courseError) throw courseError;
-      if (!courseData) throw new Error('Course not found');
+      if (courseError) {
+        console.error("Error fetching course:", courseError);
+        throw courseError;
+      }
+      
+      if (!courseData) {
+        console.error("Course not found for ID:", id);
+        throw new Error('Course not found');
+      }
+
+      console.log("Course data loaded:", courseData);
 
       // Create a custom PostgrestFilterBuilder to access non-existing tables
       // This is a temporary solution until the database is updated
@@ -199,6 +208,7 @@ const CoursePage = () => {
   }
 
   if (error || !course) {
+    console.error("Error in CoursePage:", error);
     return (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold mb-4">Course Not Found</h2>
